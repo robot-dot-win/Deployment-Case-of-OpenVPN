@@ -126,10 +126,9 @@ LimitNOFILE=4096
 [root@localhost 3]# ./easyrsa init-pki
 [root@localhost 3]# ./easyrsa build-ca nopass
 ```
-CA证书和私钥文件：
+CA证书：
 ```
 ./pki/ca.crt
-./pki/private/ca.key
 ```
 生成OpenVPN服务器证书:
 ```bash
@@ -149,7 +148,7 @@ OpenVPN服务器证书和私钥文件：
 ./pki/dh.pem
 ```
 
-将上面生成的5个文件复制到OpenVPN服务器的配置文件目录中：`/etc/openvpn/server/`
+将上面生成的4个文件复制到OpenVPN服务器的配置文件目录中：`/etc/openvpn/server/`
 
 在OpenVPN服务器上，生成TLS共享密钥：
 ```bash
