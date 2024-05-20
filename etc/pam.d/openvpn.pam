@@ -1,0 +1,32 @@
+# OpenVPN用户PAM认证配置文件，2024-05-20
+#
+# 版权所有：Copyright (C) 2024, Martin Young <martin_young@live.cn>
+#
+# 测试环境：CentOS Stream 9
+# 文件路径：/etc/pam.d/openvpn.pam
+#
+# 注意事项：这个文件必须保存为Unix UTF8-NoBOM格式
+#-------------------------------------------------------------------------------------
+
+# OpenVPN大小写敏感的Common Name可以绑定IP。而使用SMTP认证时，账户名大小写无关、是否带
+# 域名无关，因此需对登录的用户名做规范性限制。这条规则限定用户名只能包含小写字母、数字、
+# 下划线、小数点、减号，且长度为3-30：
+auth requisite pam_usermatch.so [^[a-z0-9_\.-\]{3,30}$] allow
+
+# 如果用户名能够按照某些命名规则来限制用途，当需要禁用某些类用户名连接OpenVPN时，可以
+# 使用相关规则。例如这条规则限定用户名不能包含字符串hr、admin、master、reply、list：
+#auth requisite pam_usermatch.so .*(hr|admin|master|reply|list).* deny
+
+# 必要时，可开发OA系统接口自动维护一个黑名单，例如，当黑名单列表写在配置文件目录的blacklist.txt中时：
+#auth requisite pam_listfile.so onerr=fail item=user sense=deny file=/etc/openvpn/server/blacklist.txt
+
+# 如果用户规模比较小或比较固定，则直接将合法用户写在白名单中即可，此时上面那些规则都可
+# 以省略：
+#auth requisite pam_listfile.so onerr=fail item=user sense=allow file=/etc/openvpn/server/whitelist.txt
+
+# 经过上面对用户名规范化处理以后，再去SMTP服务器进行用户认证。下面的示例需根据实际情况
+# 进行修改：
+auth requisite pam_smtp.so smtp.foo.com:465 tls @foo.com
+
+# 账户管理：
+account	required pam_permit.so
