@@ -19,7 +19,7 @@ if [ -n "${1}" ]; then
     elif [ ${ip[0]} -eq 10 ]; then
         local="yes"
     else
-        echo 'push "route 192.168.248.0/21 255.255.248.0"' > "${1}"
+        echo 'push "route 192.168.248.0 255.255.248.0"' > "${1}"
     fi
 fi
 
