@@ -66,7 +66,7 @@
 [root@localhost ~]# systemctl disable --now firewalld
 [root@localhost ~]# dnf remove firewalld
 [root@localhost ~]# dnf install nftables
-[root@localhost ~]# if a
+[root@localhost ~]# ip a
 ```
 编辑本仓库的`nftables.conf`文件，以`192.168.255.254`地址的网卡名替换文件中的`eth0`，然后替换`/etc/sysconfig/nftables.conf`文件。
 
@@ -126,7 +126,7 @@ LimitNOFILE=4096
 [root@localhost 3]# ./easyrsa init-pki
 [root@localhost 3]# ./easyrsa build-ca nopass
 ```
-CA证书：
+生成的CA证书文件：
 ```
 ./pki/ca.crt
 ```
@@ -134,7 +134,7 @@ CA证书：
 ```bash
 [root@localhost 3]# ./easyrsa build-server-full foo-vpnserver nopass
 ```
-OpenVPN服务器证书和私钥文件：
+生成的证书和私钥文件：
 ```
 ./pki/issued/foo-vpnserver.crt
 ./pki/private/foo-vpnserver.key
@@ -143,7 +143,7 @@ OpenVPN服务器证书和私钥文件：
 ```bash
 [root@localhost 3]# ./easyrsa gen-dh
 ```
-参数文件：
+生成的参数文件：
 ```
 ./pki/dh.pem
 ```
