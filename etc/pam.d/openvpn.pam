@@ -15,7 +15,7 @@ auth requisite pam_usermatch.so [^[a-z0-9_\.-\]{3,30}$] allow
 
 # 如果用户名能够按照某些命名规则来限制用途，当需要禁用某些类用户名连接OpenVPN时，可以
 # 使用相关规则。例如这条规则限定用户名不能包含字符串hr、admin、master、reply、list：
-#auth requisite pam_usermatch.so .*(hr|admin|master|reply|list).* deny
+#auth requisite pam_usermatch.so (hr|admin|master|reply|list).* deny
 
 # 必要时，可开发OA系统接口自动维护一个黑名单，例如，当黑名单列表写在配置文件目录的blacklist.txt中时：
 #auth requisite pam_listfile.so onerr=fail item=user sense=deny file=/etc/openvpn/server/blacklist.txt
