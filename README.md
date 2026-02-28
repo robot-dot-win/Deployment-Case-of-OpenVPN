@@ -30,7 +30,7 @@
 - 核心交换机上设置服务器VLAN与OpenVPN网络之间的路由转发，OpenVPN服务器上设置服务器VLAN与OpenVPN的路由转发，可允许接入OpenVPN的设备如同在总部本地一样访问服务器。
 - OpenVPN可通过插件或Shell脚本灵活扩展用户认证方式。这里通过Linux PAM插件的形式，以SMTPS通过邮件系统进行认证。接入OpenVPN的`Common Name`使用邮箱地址域名之前的小写用户名，每个`Common Name`绑定一个固定IP地址，这样即可确定每位接入者的身份。
 - OpenVPN的0-11级日志，可根据网络安全审计要求选择所需级别。
-- 由于客户端所在网络情况复杂多样，在许多网络环境中，UDP协议是被阻止的，因此选用TCP协议。
+- 由于客户端所在网络情况复杂多样，在许多网络环境中，UDP协议是被阻止的，因此选用TCP/UDP混合模式（OpenVPN从v2.7开始支持）。
 - 允许OpenVPN客户端之间的网络连通，这样，当一个客户端是服务器时，其他客户端可以访问它；尤其是，当这个客户端设置了代理服务时，其他客户端可通过该代理服务器访问远端网络。
 - OpenVPN客户端连接的时候，获得推送的到服务器VLAN的静态路由，这样，客户端即可如同在总部本地一样访问服务器。为了简化配置，应该精心选择服务器VLAN网段和OpenVPN网段，尽可能避免与客户端所在网络地址发生冲突。
 - 客户端所在的许多网络都使用自己当地的DNS以便访问Intranet资源，因此OpenVPN服务器不应该向客户端推送DNS，也不能将客户端原来的流量导向VPN隧道，以免影响客户端原来的正常工作环境。
@@ -44,10 +44,10 @@
 - 服务器网段：`192.168.248.0/21` 划分成8个24位掩码VLAN
 - OpenVPN网段：`192.168.224.0/20`
 - OpenVPN服务器IP地址：`192.168.255.254` 服务端口：`81` 域名：`vpn.foo.com`
-- 核心交换机静态路由：`192.168.224.0/20` via `192.168.255.254`
+- 核心交换机静态路由：`192.168.224.0/20` 经由 `192.168.255.254`
 - 公网DNS解析：`vpn.foo.com` --> `公网IP1,公网IP2,公网IP3`
 - 内网DNS解析：`vpn.foo.com` --> `192.168.255.254`
-- 路由器端口映射：`公网IP1,公网IP2,公网IP3:81` --> `192.168.255.254:81`
+- 路由器端口映射：`公网IP1,公网IP2,公网IP3`的TCP和UDP端口`81` --> `192.168.255.254:81`
 
 ## 2、操作系统
 
@@ -77,11 +77,11 @@
 
 ### 2.3 内核参数
 
-由于OpenVPN服务器需要处理较高的网络并发连接，并且需要启用路由转发，所以需要优化和调整内核参数。本仓库附带了两个适用于8G内存的配置文件：
-- `z1-common.conf`      一般Linux服务器内核参数
-- `z2-openvpn.conf`     OpenVPN服务器内核参数
+由于OpenVPN服务器需要处理较高的网络并发连接，并且需要启用路由转发，所以需要优化和调整内核参数。本仓库附带了两个适用于8G内存、并发连接数1800+的配置文件：
+- `10-common.conf`      一般Linux服务器内核参数
+- `20-openvpn.conf`     OpenVPN服务器内核参数
 
-将这个两个文件放在`/etc/sysctl.d/`下面，然后重启服务器使之生效。
+将这个两个文件放在`/etc/sysctl.d/`下面，下次重启服务器可生效。
 
 ## 3、安装
 
@@ -98,8 +98,9 @@ OpenVPN程序和关联模块在[EPEL扩展包](https://docs.fedoraproject.org/en
 
 主要考虑三个因素：
 - 为符合IT管理规范对日志的要求，应删掉 --suppress-timestamps 参数，使日志内容带有时间戳；
+- 若要使用DCO，data-ciphers当前仅支持AES-256-GCM和AES-128-GCM；
 - 因为超过了1k个同时连接数，所以需调整最大sockets连接数参数；
-- 必要时增加ExecStartPre、ExecStartPost等参数，以执行前置、后置等服务。
+- 必要时增加ExecStartPre、ExecStartPost等参数，以执行前置、后置等任务。
 
 ```bash
 [root@localhost ~]# systemctl edit openvpn-server@.service
@@ -108,8 +109,8 @@ OpenVPN程序和关联模块在[EPEL扩展包](https://docs.fedoraproject.org/en
 ```
 [Service]
 ExecStart=
-ExecStart=/usr/sbin/openvpn --cipher AES-256-GCM --data-ciphers AES-256-GCM:AES-256-CBC --config %i.conf
-LimitNOFILE=4096
+ExecStart=/usr/sbin/openvpn --cipher AES-256-GCM --data-ciphers AES-256-GCM:AES-128-GCM --config %i.conf
+LimitNOFILE=200000
 ```
 
 ### 4.2 生成证书
@@ -139,16 +140,8 @@ LimitNOFILE=4096
 ./pki/issued/foo-vpnserver.crt
 ./pki/private/foo-vpnserver.key
 ```
-生成Diffie Hellman参数：
-```bash
-[root@localhost 3]# ./easyrsa gen-dh
-```
-生成的参数文件：
-```
-./pki/dh.pem
-```
 
-将上面生成的4个文件复制到OpenVPN服务器的配置文件目录中：`/etc/openvpn/server/`
+将上面生成的3个文件复制到OpenVPN服务器的配置文件目录中：`/etc/openvpn/server/`
 
 在OpenVPN服务器上，生成TLS共享密钥：
 ```bash
@@ -164,8 +157,8 @@ LimitNOFILE=4096
 编译：
 ```bash
 [root@localhost ~]# dnf install gcc gcc-c++ pam-devel libcurl-devel
-[root@localhost ~]# g++ pam_smtp.cpp -o pam_smtp.so -shared -lpam -lcurl -fPIC
-[root@localhost ~]# g++ pam_usermatch.cpp -o pam_usermatch.so -shared -lpam -fPIC
+[root@localhost ~]# g++ -O2 pam_smtp.cpp      -o pam_smtp.so      -shared -fPIC -lpam -lcurl
+[root@localhost ~]# g++ -O2 pam_usermatch.cpp -o pam_usermatch.so -shared -fPIC -lpam
 ```
 将模块程序`pam_smtp.so`和`pam_usermatch.so`复制到`/usr/lib64/security/`下面。
 
@@ -187,12 +180,9 @@ LimitNOFILE=4096
 
 本仓库文件`openvpn-foo.ovpn`是适用于所有平台的客户端配置文件，需根据实际情况进行修改。
 
-常用平台的OpenVPN客户端软件下载：
-- Windows: https://build.openvpn.net/downloads/releases/
-- Linux:   https://community.openvpn.net/openvpn/wiki/OpenvpnSoftwareRepos
-- macOS:   https://github.com/Tunnelblick/Tunnelblick
-- Android: https://github.com/schwabe/ics-openvpn
-- iOS:     境外苹果应用商店搜索`OpenVPN Connect`
+各种平台的OpenVPN软件下载可参见：https://openvpn.net/community/
+
+注：HarmonyOS 4.x及之前版本可直接使用Android应用，之后的版本目前尚未有发行板。
 
 安装完后只需要导入客户端配置文件即可。不再赘述。
 
