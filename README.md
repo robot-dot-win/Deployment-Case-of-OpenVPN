@@ -53,7 +53,7 @@
 
 ### 2.1 安装
 
-选用CentOS Stream 9，极小化安装。
+选用CentOS Stream 10，极小化安装。以下操作以及相关配置文件均是基于CentOS Stream 10的。
 
 ### 2.2 防火墙
 
@@ -77,18 +77,14 @@
 
 ### 2.3 内核参数
 
-由于OpenVPN服务器需要处理较高的网络并发连接，并且需要启用路由转发，所以需要优化和调整内核参数。本仓库附带了两个适用于8G内存、并发连接数1800+的配置文件：
-- `10-common.conf`      一般Linux服务器内核参数
-- `20-openvpn.conf`     OpenVPN服务器内核参数
-
-将这个两个文件放在`/etc/sysctl.d/`下面，下次重启服务器可生效。
+由于OpenVPN服务器需要处理较高的网络并发连接，并且需要启用路由转发，所以需要优化和调整内核参数。本仓库附带的`20-openvpn.conf`是适用于8G内存、并发连接数1800+的配置文件，可将其放在`/etc/sysctl.d/`下面，重启服务器生效。
 
 ## 3、安装
 
-OpenVPN程序和关联模块在[EPEL扩展包](https://docs.fedoraproject.org/en-US/epel/)中，可参照说明安装EPEL。
-
-然后安装OpenVPN：
+OpenVPN 2.7最新版程序和关联模块在[Fedora Copr库](https://copr.fedorainfracloud.org/coprs/g/OpenVPN/openvpn-release-2.7/)中，安装命令如下：
 ```bash
+[root@localhost ~]# dnf install dnf-plugins-core
+[root@localhost ~]# dnf copr enable @OpenVPN/openvpn-release-2.7
 [root@localhost ~]# dnf install openvpn
 ```
 
@@ -111,6 +107,7 @@ OpenVPN程序和关联模块在[EPEL扩展包](https://docs.fedoraproject.org/en
 ExecStart=
 ExecStart=/usr/sbin/openvpn --cipher AES-256-GCM --data-ciphers AES-256-GCM:AES-128-GCM --config %i.conf
 LimitNOFILE=200000
+LimitNPROC=65536
 ```
 
 ### 4.2 生成证书
