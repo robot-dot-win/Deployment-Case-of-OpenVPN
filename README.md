@@ -114,7 +114,9 @@ LimitNPROC=65536
 
 使用[easy-rsa](https://github.com/OpenVPN/easy-rsa)方便操作。这项工作也可以在其他已安装easy-rsa的机器上进行（例如一台Windows机器）。
 
-以CentOS Stream 9为例，easy-rsa也在EPEL扩展包中，需按前述先安装EPEL。然后安装easy-rsa：
+以CentOS Stream 10为例，easy-rsa在[EPEL扩展包](https://docs.fedoraproject.org/en-US/epel/getting-started/#_el10)中。需参考说明先安装EPEL。
+
+然后安装easy-rsa：
 ```bash
 [root@localhost ~]# dnf install easy-rsa
 ```
@@ -153,7 +155,7 @@ LimitNPROC=65536
 
 编译：
 ```bash
-[root@localhost ~]# dnf install gcc gcc-c++ pam-devel libcurl-devel
+[root@localhost ~]# dnf install gcc-c++ pam-devel libcurl-devel
 [root@localhost ~]# g++ -O2 pam_smtp.cpp      -o pam_smtp.so      -shared -fPIC -lpam -lcurl
 [root@localhost ~]# g++ -O2 pam_usermatch.cpp -o pam_usermatch.so -shared -fPIC -lpam
 ```
